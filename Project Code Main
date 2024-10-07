@@ -1,0 +1,404 @@
+import TruBot
+from TruBot.email import EmailConnector
+from TruBot.ocr import TruCap
+from datetime import datetime
+import pandas as pd
+import os
+import logging
+
+# Configure logging
+logging.basicConfig(
+level=logging.INFO,
+format='%(asctime)s [%(levelname)s] %(message)s',
+handlers=[
+logging.FileHandler("receipt_processor.log"),
+logging.StreamHandler()
+]
+)
+
+class ReceiptProcessor:
+def __init__(self, email_config, output_path):
+"""
+Initialize the Receipt Processor
+
+Args:
+email_config (dict): Email configuration details
+output_path (str): Path to save processed data
+"""
+self.email_connector = EmailConnector(
+username=email_config['username'],
+password=email_config['password'], # Consider using environment variables for security
+server=email_config['server']
+)
+self.trucap = TruCap()
+self.output_path = output_path
+
+# Ensure the output directory exists
+os.makedirs(self.output_path, exist_ok=True)
+logging.info(f"Output directory set to: {self.output_path}")
+
+def connect_to_email(self):
+"""Establish connection to email server"""
+try:
+self.email_connector.connect()
+logging.info("Successfully connected to email server")
+return True
+except Exception as e:
+logging.error(f"Error connecting to email: {str(e)}")
+return False
+
+def fetch_receipts(self, search_criteria):
+"""
+Fetch emails with receipt attachments
+
+Args:
+search_criteria (dict): Search filters for emails
+Returns:
+list: List of email objects with attachments
+"""
+subjects = search_criteria.get('subject', [])
+date_from = search_criteria.get('date_from')
+date_to = search_criteria.get('date_to')
+
+# Convert date strings to datetime objects if they are strings
+if isinstance(date_from, str):
+try:
+date_from = datetime.strptime(date_from, "%Y-%m-%d")
+except ValueError as ve:
+logging.error(f"Invalid date_from format: {ve}")
+date_from = None
+
+if isinstance(date_to, str):
+try:
+date_to = datetime.strptime(date_to, "%Y-%m-%d")
+except ValueError as ve:
+logging.error(f"Invalid date_to format: {ve}")
+date_to = None
+
+all_emails = []
+for subject in subjects:
+try:
+emails = self.email_connector.search_emails(
+subject=subject,
+date_from=date_from,
+date_to=date_to
+)
+logging.info(f"Found {len(emails)} emails with subject '{subject}'")
+all_emails.extend(emails)
+except Exception as e:
+logging.error(f"Error searching emails with subject '{subject}': {str(e)}")
+
+return all_emails
+
+def process_attachment(self, attachment):
+"""
+Extract data from receipt attachment
+
+Args:
+attachment: Email attachment object
+Returns:
+dict: Extracted receipt data
+"""
+try:
+# Configure TruCap+ extraction templates
+self.trucap.load_template('receipt_template')
+logging.debug("TruCap template loaded successfully")
+
+# Extract data using TruCap+
+extracted_data = self.trucap.extract_data(attachment)
+logging.debug(f"Extracted data: {extracted_data}")
+
+# Structure the extracted data
+receipt_data = {
+'receipt_date': extracted_data.get('date'),
+'receipt_number': extracted_data.get('receipt_no'),
+'vendor_name': extracted_data.get('vendor'),
+'total_amount': extracted_data.get('amount'),
+'items': extracted_data.get('items', [])
+}
+
+return receipt_data
+except Exception as e:
+logging.error(f"Error processing attachment: {str(e)}")
+return {}
+
+def save_to_excel(self, receipts_data):
+"""
+Save processed receipt data to Excel
+
+Args:
+receipts_data (list): List of processed receipt data
+"""
+if not receipts_data:
+logging.warning("No receipt data to save.")
+return
+
+try:
+df = pd.DataFrame(receipts_data)
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+output_file = os.path.join(
+self.output_path,
+f'processed_receipts_{timestamp}.xlsx'
+)
+df.to_excel(output_file, index=False)
+logging.info(f"Data saved to {output_file}")
+except Exception as e:
+logging.error(f"Error saving data to Excel: {str(e)}")
+
+def main():
+# Configuration
+email_config = {
+'username': 'finance@company.com',
+'password': '**********', # Consider using environment variables or a secure vault
+'server': 'imap.gmail.com'
+}
+
+output_path = r'C:\Processed_Receipts'
+
+# Initialize processor
+processor = ReceiptProcessor(email_config, output_path)
+
+# Connect to email
+if not processor.connect_to_email():
+logging.error("Failed to connect to email. Exiting.")
+return
+
+# Set search criteria
+search_criteria = {
+'subject': ['food bill', 'petrol bill', 'receipt'],
+'date_from': '2024-01-01',
+'date_to': '2024-12-31'
+}
+
+# Process receipts
+receipts_data = []
+try:
+emails = processor.fetch_receipts(search_criteria)
+except Exception as e:
+logging.error(f"Failed to fetch receipts: {str(e)}")
+emails = []
+
+for email in emails:
+attachments = getattr(email, 'attachments', [])
+if not attachments:
+logging.info(f"No attachments found in email with subject '{email.subject}'")
+continue
+
+for attachment in attachments:
+attachment_type = getattr(attachment, 'type', '').lower()
+# Check for PDF or Image MIME types
+if attachment_type == 'application/pdf' or attachment_type.startswith('image/'):
+receipt_data = processor.process_attachment(attachment)
+if receipt_data:
+receipts_data.append(receipt_data)
+else:
+logging.info(f"Skipped unsupported attachment type: {attachment_type}")
+
+# Save results
+processor.save_to_excel(receipts_data)
+
+if __name__ == "__main__":
+main()
+
+humanize text
+Import TruBot
+from TruBot.E mail import EmailConnector
+from TruBot.Ocr import TruCap
+from datetime import datetime
+import pandas as pd
+import os
+import logging
+
+# Configure logging
+logging.BasicConfig(
+    stage=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler("receipt_processor.Log"),
+        logging.StreamHandler()
+    ]
+)
+
+elegance ReceiptProcessor:
+    def __init__(self, email_config, output_path):
+        """
+        Initialize the Receipt Processor
+
+        Args:
+            email_config (dict): Email configuration info
+            output_path (str): Path to shop processed statistics
+        """
+        self.Email_connector = EmailConnector(
+            username=email_config['username'],
+            password=email_config['password'],  # Consider the usage of environment variables for safety
+            server=email_config['server']
+        )
+        self.Trucap = TruCap()
+        self.Output_path = output_path
+
+        # Ensure the output directory exists
+        os.Makedirs(self.Output_path, exist_ok=True)
+        logging.Info(f"Output directory set to: self.Output_path")
+
+    def connect_to_email(self):
+        """Establish connection to e-mail server"""
+        attempt:
+            self.Email_connector.Connect()
+            logging.Information("Successfully connected to e mail server")
+            go back True
+        besides Exception as e:
+            logging.Errors(f"Error connecting to email: str(e)")
+            go back False
+
+    def fetch_receipts(self, search_criteria):
+        """
+        Fetch emails with receipt attachments
+
+        Args:
+            search_criteria (dict): Search filters for emails
+        Returns:
+            listing: List of e-mail objects with attachments
+        """
+        topics = search_criteria.Get('difficulty', [])
+        date_from = search_criteria.Get('date_from')
+        date_to = search_criteria.Get('date_to')
+
+        # Convert date strings to datetime items if they're strings
+        if isinstance(date_from, str):
+            try:
+                date_from = datetime.Strptime(date_from, "%Y-%m-%d")
+            besides ValueError as ve:
+                logging.Error(f"Invalid date_from format: ve")
+                date_from = None
+
+        if isinstance(date_to, str):
+            strive:
+                date_to = datetime.Strptime(date_to, "%Y-%m-%d")
+            besides ValueError as ve:
+                logging.Errors(f"Invalid date_to format: ve")
+                date_to = None
+
+        all_emails = []
+        for concern in topics:
+            strive:
+                emails = self.Email_connector.Search_emails(
+                    situation=difficulty,
+                    date_from=date_from,
+                    date_to=date_to
+                )
+                logging.Info(f"Found len(emails) emails with problem 'challenge'")
+                all_emails.Make bigger(emails)
+            except Exception as e:
+                logging.Error(f"Error looking emails with concern 'difficulty': str(e)")
+
+        go back all_emails
+
+    def process_attachment(self, attachment):
+        """
+        Extract information from receipt attachment
+
+        Args:
+            attachment: Email attachment item
+        Returns:
+            dict: Extracted receipt records
+        """
+        strive:
+            # Configure TruCap+ extraction templates
+            self.Trucap.Load_template('receipt_template')
+            logging.Debug("TruCap template loaded correctly")
+
+            # Extract facts the use of TruCap+
+            extracted_data = self.Trucap.Extract_data(attachment)
+            logging.Debug(f"Extracted facts: extracted_data")
+
+            # Structure the extracted records
+            receipt_data = 
+                'receipt_date': extracted_data.Get('date'),
+                'receipt_number': extracted_data.Get('receipt_no'),
+                'vendor_name': extracted_data.Get('seller'),
+                'total_amount': extracted_data.Get('amount'),
+                'objects': extracted_data.Get('gadgets', [])
+            
+
+            return receipt_data
+        besides Exception as e:
+            logging.Mistakes(f"Error processing attachment: str(e)")
+            return 
+
+    def save_to_excel(self, receipts_data):
+        """
+        Save processed receipt statistics to Excel
+
+        Args:
+            receipts_data (listing): List of processed receipt records
+        """
+        if not receipts_data:
+            logging.Caution("No receipt facts to save.")
+            return
+
+        try:
+            df = pd.DataFrame(receipts_data)
+            timestamp = datetime.Now().Strftime("%Ypercentmpercentd_%HpercentMp.CS")
+            output_file = os.Path.Be a part of(
+                self.Output_path,
+                f'processed_receipts_timestamp.Xlsx'
+            )
+            df.To_excel(output_file, index=False)
+            logging.Information(f"Data stored to output_file")
+        except Exception as e:
+            logging.Blunders(f"Error saving statistics to Excel: str(e)")
+
+def essential():
+    # Configuration
+    email_config = 
+        'username': 'finance@enterprise.Com',
+        'password': '**********',  # Consider the usage of environment variables or a secure vault
+        'server': 'imap.Gmail.Com'
+    
+
+    output_path = r'C:Processed_Receipts'
+
+    # Initialize processor
+    processor = ReceiptProcessor(email_config, output_path)
+
+    # Connect to e mail
+    if now not processor.Connect_to_email():
+        logging.Mistakes("Failed to connect to e-mail. Exiting.")
+        go back
+
+    # Set seek standards
+    search_criteria = 
+        'difficulty': ['food bill', 'petrol bill', 'receipt'],
+        'date_from': '2024-01-01',
+        'date_to': '2024-12-31'
+    
+
+    # Process receipts
+    receipts_data = []
+    try:
+        emails = processor.Fetch_receipts(search_criteria)
+    besides Exception as e:
+        logging.Errors(f"Failed to fetch receipts: str(e)")
+        emails = []
+
+    for electronic mail in emails:
+        attachments = getattr(e-mail, 'attachments', [])
+        if now not attachments:
+            logging.Info(f"No attachments observed in email with problem 'e-mail.Concern'")
+            preserve
+
+        for attachment in attachments:
+            attachment_type = getattr(attachment, 'type', '').Lower()
+            # Check for PDF or Image MIME kinds
+            if attachment_type == 'utility/pdf' or attachment_type.Startswith('image/'):
+                receipt_data = processor.Process_attachment(attachment)
+                if receipt_data:
+                    receipts_data.Append(receipt_data)
+            else:
+                logging.Information(f"Skipped unsupported attachment kind: attachment_type")
+
+    # Save outcomes
+    processor.Save_to_excel(receipts_data)
+
+if __name__ == "__main__":
+    major()
